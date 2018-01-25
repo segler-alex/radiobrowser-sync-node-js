@@ -1,0 +1,34 @@
+{
+  "name": "radiobrowser-sync-node",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/segler-alex/radiobrowser-sync-node-js.git"
+  },
+  "author": "",
+  "license": "AGPL 3",
+  "bugs": {
+    "url": "https://github.com/segler-alex/radiobrowser-sync-node-js/issues"
+  },
+  "homepage": "https://github.com/segler-alex/radiobrowser-sync-node-js#readme",
+  "dependencies": {
+    "mysql2": "^1.5.1",
+    "request": "^2.83.0",
+    "request-promise": "^4.2.2",
+    "sequelize": "^4.32.1"
+  },
+  "eslintConfig": {
+    "env": {
+      "node": true,
+      "es6": true
+    },
+    "parserOptions": {
+      "ecmaVersion": 6
+    }
+  }
+}
