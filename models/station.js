@@ -3,6 +3,7 @@ module.exports = (sequelize, DataTypes) => {
   var Station = sequelize.define('Station', {
     StationID: {
       type: DataTypes.INTEGER,
+      autoIncrement: true,
       primaryKey: true
     },
     Name: {
@@ -18,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING
     },
     Creation: {
-      type: DataTypes.TIME
+      type: DataTypes.DATE
     },
     Country: {
       type: DataTypes.STRING
@@ -48,7 +49,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER
     },
     ClickTimestamp: {
-      type: DataTypes.TIME
+      type: DataTypes.DATE
     },
     Codec: {
       type: DataTypes.STRING
@@ -57,7 +58,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN
     },
     LastCheckTime: {
-      type: DataTypes.TIME
+      type: DataTypes.DATE
     },
     Bitrate: {
       type: DataTypes.INTEGER
@@ -66,7 +67,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING
     },
     LastCheckOkTime: {
-      type: DataTypes.TIME
+      type: DataTypes.DATE
     },
     Hls: {
       type: DataTypes.BOOLEAN
