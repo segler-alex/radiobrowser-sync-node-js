@@ -31,7 +31,7 @@ db.sequelize
     // console.log(JSON.stringify(stations[0],null,' '));
     console.log('Importing ' + stations.length + ' stations..');
     for (var i=0;i<stations.length;i++){
-      all.push(db.Station.create({
+      all.push({
         Name: stations[i].name,
         Url: stations[i].url,
         Homepage: stations[i].homepage,
@@ -44,9 +44,9 @@ db.sequelize
         Votes: stations[i].votes,
         NegativeVotes: stations[i].negativevotes,
         Creation: stations[i].lastchangetime
-      }));
+      });
     }
-    return Promise.all(all);
+    return db.Station.bulkCreate(all);
   })
   .then(()=>{
     console.log('OK');
