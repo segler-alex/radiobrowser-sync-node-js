@@ -13,19 +13,22 @@ services:
        - DB_PASS=password
        - DB_HOST=dbserver
        - DB_NAME=radio
-  api:
+    depends_on:
+       - dbserver
+  sync:
     image: segleralex/radiobrowser-sync-node-js:latest
     deploy:
       replicas: 1
     networks:
       - mynet
-    ports:
-      - 8080:8080
     environment:
        - DB_USER=radiouser
        - DB_PASS=password
        - DB_HOST=dbserver
        - DB_NAME=radio
+       - SYNC_BASE_URL=http://www.radio-browser.info/webservice
+    depends_on:
+       - dbserver
   dbserver:
     image: mariadb:latest
     deploy:

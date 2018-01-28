@@ -3,6 +3,13 @@
 const db = require('./models');
 const rp = require('request-promise');
 
+const SYNC_BASE_URL = process.env.SYNC_BASE_URL || exitWithError('SYNC_BASE_URL');
+
+function exitWithError(str) {
+  console.error('Missing ' + str);
+  process.exit(1);
+}
+
 console.log('Connecting to db..');
 db.sequelize
   .authenticate()
@@ -17,7 +24,7 @@ db.sequelize
     console.log('OK');
     console.log('Get stations from webservice..');
     var options = {
-      uri: 'http://localhost/webservice/json/stations',
+      uri: SYNC_BASE_URL + '/json/stations',
       headers: {
         'User-Agent': 'radiobrowsersync/0.0.1'
       },
