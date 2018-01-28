@@ -27,6 +27,7 @@ services:
        - DB_HOST=dbserver
        - DB_NAME=radio
        - SYNC_BASE_URL=https://www.radio-browser.info/webservice
+       - SYNC_INTERVAL=60
     depends_on:
        - dbserver
   dbserver:
