@@ -11,8 +11,8 @@ function exitWithError(str) {
   process.exit(1);
 }
 
-console.log('Connecting to db..');
 retry(function (options) {
+  console.log('Connecting to db..');
   return db.sequelize.authenticate();
 }, {
   max: 10, // maximum amount of tries

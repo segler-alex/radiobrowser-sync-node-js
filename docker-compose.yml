@@ -26,7 +26,7 @@ services:
        - DB_PASS=password
        - DB_HOST=dbserver
        - DB_NAME=radio
-       - SYNC_BASE_URL=http://www.radio-browser.info/webservice
+       - SYNC_BASE_URL=https://www.radio-browser.info/webservice
     depends_on:
        - dbserver
   dbserver:
