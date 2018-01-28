@@ -2,6 +2,7 @@
 
 const db = require('./models');
 const rp = require('request-promise');
+const retry = require('retry-as-promised');
 
 const SYNC_BASE_URL = process.env.SYNC_BASE_URL || exitWithError('SYNC_BASE_URL');
 
@@ -11,8 +12,15 @@ function exitWithError(str) {
 }
 
 console.log('Connecting to db..');
-db.sequelize
-  .authenticate()
+retry(function (options) {
+  return db.sequelize.authenticate();
+}, {
+  max: 10, // maximum amount of tries
+  timeout: 10000, // throw if no response or error within milisecnd timeout, default: undefined,
+  backoffBase: 5000, // Initial backoff duration in ms. Default: 100,
+  backoffExponent: 1.5, // Exponent to increase backoff each try. Default: 1.1
+  name:  'SourceX' // if user supplies string, it will be used when composing error/reporting messages; else if retry gets a callback, uses callback name in erroring/reporting; else (default) uses litteral string 'unknown'
+})
   .then(() => {
     console.log('OK');
     console.log('Recreate db tables..');
