@@ -1,10 +1,20 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-  var Station = sequelize.define('Station', {
-    StationID: {
+  var StationHistory = sequelize.define('StationHistory', {
+    StationChangeID: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true
+    },
+    StationUuid: {
+      type: DataTypes.UUID
+    },
+    ChangeUuid: {
+      type: DataTypes.UUID,
+      unique: true
+    },
+    StationID: {
+      type: DataTypes.INTEGER
     },
     Name: {
       type: DataTypes.STRING
@@ -24,6 +34,9 @@ module.exports = (sequelize, DataTypes) => {
     Country: {
       type: DataTypes.STRING
     },
+    Subcountry: {
+      type: DataTypes.STRING
+    },
     Language: {
       type: DataTypes.STRING
     },
@@ -36,48 +49,8 @@ module.exports = (sequelize, DataTypes) => {
     NegativeVotes: {
       type: DataTypes.INTEGER
     },
-    Source: {
-      type: DataTypes.STRING
-    },
-    Subcountry: {
-      type: DataTypes.STRING
-    },
-    clickcount: {
-      type: DataTypes.INTEGER
-    },
-    ClickTrend: {
-      type: DataTypes.INTEGER
-    },
-    ClickTimestamp: {
-      type: DataTypes.DATE
-    },
-    Codec: {
-      type: DataTypes.STRING
-    },
-    LastCheckOK: {
-      type: DataTypes.BOOLEAN
-    },
-    LastCheckTime: {
-      type: DataTypes.DATE
-    },
-    Bitrate: {
-      type: DataTypes.INTEGER
-    },
-    UrlCache: {
-      type: DataTypes.STRING
-    },
-    LastCheckOkTime: {
-      type: DataTypes.DATE
-    },
-    Hls: {
-      type: DataTypes.BOOLEAN
-    },
     IP: {
       type: DataTypes.STRING
-    },
-    Uuid: {
-      type: DataTypes.UUID,
-      unique: true
     }
   }, {
     classMethods: {
@@ -85,8 +58,8 @@ module.exports = (sequelize, DataTypes) => {
         // associations can be defined here
       }
     },
-    tableName: 'Station',
+    tableName: 'StationHistory',
     timestamps: false
   });
-  return Station;
+  return StationHistory;
 };
