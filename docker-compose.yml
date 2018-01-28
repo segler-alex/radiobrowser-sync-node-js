@@ -30,7 +30,7 @@ services:
     depends_on:
        - dbserver
   dbserver:
-    image: mariadb:latest
+    image: mariadb:10.1
     deploy:
       replicas: 1
     environment:
