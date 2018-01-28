@@ -3,11 +3,14 @@
 const db = require('./models');
 const rp = require('request-promise');
 const async = require('async');
+const createLogger = require('logging');
 
 const SYNC_BASE_URL = process.env.SYNC_BASE_URL || exitWithError('SYNC_BASE_URL');
 const USER_AGENT = 'radiobrowsersync/0.0.1';
 const SYNC_INTERVAL = parseInt(process.env.SYNC_INTERVAL) || exitWithError('SYNC_INTERVAL');
 const SYNC_INTERVAL_MSEC = SYNC_INTERVAL * 1000;
+
+const logger = createLogger.default('SYNC');
 
 function retryPromise(times, interval, cb_p){
   return new Promise((resolve,reject)=>{
@@ -29,13 +32,13 @@ function retryPromise(times, interval, cb_p){
 }
 
 function exitWithError(str) {
-  console.error('Missing ' + str);
+  logger.error('Missing ' + str);
   process.exit(1);
 }
 
 function initialSync(){
   return Promise.resolve().then(() => {
-    console.log('Get stations from webservice..');
+    logger.info('Get stations from webservice..');
     let options = {
       uri: SYNC_BASE_URL + '/json/stations',
       headers: {
@@ -48,7 +51,7 @@ function initialSync(){
   .then((stations)=>{
     let all = [];
     // console.log(JSON.stringify(stations[0],null,' '));
-    console.log('Importing ' + stations.length + ' stations..');
+    logger.info('Importing ' + stations.length + ' stations..');
     for (let i=0;i<stations.length;i++){
       let obj = stations[i];
       all.push({
@@ -72,7 +75,7 @@ function initialSync(){
 
 function incrementalSync(seconds){
   return Promise.resolve().then(() => {
-    console.log('Get incremental changes from webservice..');
+    logger.info('Get incremental changes from webservice..');
     let options = {
       uri: SYNC_BASE_URL + '/json/stations/changed?seconds=' + seconds,
       headers: {
@@ -85,7 +88,7 @@ function incrementalSync(seconds){
   .then((stations)=>{
     let all = [];
     // console.log(JSON.stringify(stations[0],null,' '));
-    console.log('Importing ' + stations.length + ' changes..');
+    logger.info('Importing ' + stations.length + ' changes..');
     for (let i=0;i<stations.length;i++){
       let obj = stations[i];
       all.push({
@@ -109,22 +112,21 @@ function incrementalSync(seconds){
 }
 
 function doIncrementalSync(){
-  console.log('doIncrementalSync()');
   incrementalSync(SYNC_INTERVAL * 2).then(()=>{
-    console.log('Incremental sync done');
+    logger.info('Incremental sync done');
   }).catch((err)=>{
-    console.log(err);
+    logger.error(err);
   }).then(()=>{
     setTimeout(doIncrementalSync, SYNC_INTERVAL_MSEC);
   });
 }
 
 retryPromise(10, 3000, function () {
-  console.log('Connecting to db..');
+  logger.info('Connecting to db..');
   return db.sequelize.authenticate();
 })
   .then(() => {
-    console.log('Recreate db tables..');
+    logger.info('Recreate db tables..');
     return db.sequelize.sync({
       force: true
     });
@@ -138,10 +140,11 @@ retryPromise(10, 3000, function () {
   // })
   // .then((s) => {
   //   console.log('Found station:' + JSON.stringify(s, null, ' '));
+    logger.info('Initial sync done');
     setTimeout(doIncrementalSync, SYNC_INTERVAL_MSEC);
     // return db.sequelize.close();
   })
   .catch(err => {
-    console.error('Unable to connect to the database:', err);
+    logger.error('Unable to connect to the database:', err);
     process.exit(1);
   });
