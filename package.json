@@ -18,10 +18,10 @@
   },
   "homepage": "https://github.com/segler-alex/radiobrowser-sync-node-js#readme",
   "dependencies": {
+    "async": "^2.6.0",
     "mysql2": "^1.5.1",
     "request": "^2.83.0",
     "request-promise": "^4.2.2",
-    "retry-as-promised": "^2.3.2",
     "sequelize": "^4.32.1"
   },
   "eslintConfig": {

@@ -2,24 +2,37 @@
 
 const db = require('./models');
 const rp = require('request-promise');
-const retry = require('retry-as-promised');
+const async = require('async');
 
 const SYNC_BASE_URL = process.env.SYNC_BASE_URL || exitWithError('SYNC_BASE_URL');
+
+function retryPromise(times, interval, cb_p){
+  return new Promise((resolve,reject)=>{
+    async.retry({times,interval}, (cb)=>{
+      let p = cb_p();
+      p.then((result)=>{
+        cb(null, result);
+      }).catch((perr)=>{
+        cb(perr);
+      });
+    },(err,result)=>{
+      if (err){
+        reject(err);
+      }else{
+        resolve(result);
+      }
+    });
+  });
+}
 
 function exitWithError(str) {
   console.error('Missing ' + str);
   process.exit(1);
 }
 
-retry(function (options) {
+retryPromise(10, 3000, function () {
   console.log('Connecting to db..');
   return db.sequelize.authenticate();
-}, {
-  max: 10,
-  timeout: 10000,
-  backoffBase: 3000,
-  backoffExponent: 1,
-  name:  'SourceX'
 })
   .then(() => {
     console.log('OK');
