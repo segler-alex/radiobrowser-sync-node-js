@@ -1,0 +1,46 @@
+version: "3.0"
+services:
+  api:
+    image: segleralex/radiobrowser-api-rust:latest
+    deploy:
+      replicas: 1
+    networks:
+      - mynet
+    ports:
+      - 8080:8080
+    environment:
+       - DB_USER=radiouser
+       - DB_PASS=password
+       - DB_HOST=dbserver
+       - DB_NAME=radio
+  api:
+    image: segleralex/radiobrowser-sync-node-js:latest
+    deploy:
+      replicas: 1
+    networks:
+      - mynet
+    ports:
+      - 8080:8080
+    environment:
+       - DB_USER=radiouser
+       - DB_PASS=password
+       - DB_HOST=dbserver
+       - DB_NAME=radio
+  dbserver:
+    image: mariadb:latest
+    deploy:
+      replicas: 1
+    environment:
+       - MYSQL_ROOT_PASSWORD=12345678
+       - MYSQL_USER=radiouser
+       - MYSQL_PASSWORD=password
+       - MYSQL_DATABASE=radio
+    networks:
+      - mynet
+    volumes:
+      - ./dbdata:/var/lib/mysql
+networks:
+  mynet:
+    driver: "overlay"
+    driver_opts:
+      encrypted: ""
