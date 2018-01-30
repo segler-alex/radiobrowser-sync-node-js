@@ -6,6 +6,14 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
       primaryKey: true
     },
+    StationUuid: {
+      type: DataTypes.UUID,
+      unique: true
+    },
+    ChangeUuid: {
+      type: DataTypes.UUID,
+      unique: true
+    },
     Name: {
       type: DataTypes.STRING
     },
@@ -74,10 +82,6 @@ module.exports = (sequelize, DataTypes) => {
     },
     IP: {
       type: DataTypes.STRING
-    },
-    Uuid: {
-      type: DataTypes.UUID,
-      unique: true
     }
   }, {
     classMethods: {

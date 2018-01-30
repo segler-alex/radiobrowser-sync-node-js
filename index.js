@@ -55,11 +55,12 @@ function initialSync(){
     for (let i=0;i<stations.length;i++){
       let obj = stations[i];
       all.push({
+        StationUuid: obj.stationuuid,
+        ChangeUuid: obj.changeuuid,
         Name: obj.name,
         Url: obj.url,
         Homepage: obj.homepage,
         Favicon: obj.favicon,
-        Uuid: obj.stationuuid,
         Tags: obj.tags,
         Country: obj.country,
         Subcountry: obj.state,
@@ -71,6 +72,35 @@ function initialSync(){
     }
     return db.Station.bulkCreate(all);
   });
+}
+
+function insertStationHistoryEntry(obj){
+  let s = {
+    StationUuid: obj.stationuuid,
+    ChangeUuid: obj.changeuuid,
+    Name: obj.name,
+    Url: obj.url,
+    Homepage: obj.homepage,
+    Favicon: obj.favicon,
+    Tags: obj.tags,
+    Country: obj.country,
+    Subcountry: obj.state,
+    Language: obj.language,
+    Votes: obj.votes,
+    NegativeVotes: obj.negativevotes,
+    Creation: obj.lastchangetime
+  };
+  let p = db.StationHistory.create(s)
+  .then(()=>{
+    s.insertOK = true;
+  })
+  .catch((err)=>{
+    s.insertOK = false;
+  })
+  .then(()=>{
+    return s;
+  });
+  return p;
 }
 
 function incrementalSync(seconds){
@@ -91,29 +121,20 @@ function incrementalSync(seconds){
     logger.info('Importing ' + stations.length + ' changes..');
     for (let i=0;i<stations.length;i++){
       let obj = stations[i];
-      all.push({
-        Name: obj.name,
-        Url: obj.url,
-        Homepage: obj.homepage,
-        Favicon: obj.favicon,
-        Uuid: obj.stationuuid,
-        ChangeUuid: obj.changeuuid,
-        Tags: obj.tags,
-        Country: obj.country,
-        Subcountry: obj.state,
-        Language: obj.language,
-        Votes: obj.votes,
-        NegativeVotes: obj.negativevotes,
-        Creation: obj.lastchangetime
-      });
+      all.push(insertStationHistoryEntry(obj));
     }
-    return db.StationHistory.bulkCreate(all);
+    return Promise.all(all);
+  }).then((items)=>{
+    let inserted = items.filter((item)=>{
+      return item.insertOK;
+    });
+    return inserted.length;
   });
 }
 
 function doIncrementalSync(){
-  incrementalSync(SYNC_INTERVAL * 2).then(()=>{
-    logger.info('Incremental sync done');
+  incrementalSync(SYNC_INTERVAL * 2).then((items)=>{
+    logger.info('Incremental sync of '+items+' items done');
   }).catch((err)=>{
     logger.error(err);
   }).then(()=>{
