@@ -37,6 +37,8 @@ function exitWithError(str) {
 }
 
 function initialSync(){
+  return incrementalSync(0);
+  /*
   return Promise.resolve().then(() => {
     logger.info('Get stations from webservice..');
     let options = {
@@ -67,10 +69,38 @@ function initialSync(){
         Language: obj.language,
         Votes: obj.votes,
         NegativeVotes: obj.negativevotes,
-        Creation: obj.lastchangetime
+        Creation: obj.lastchangetime,
+        IP: obj.ip
       });
     }
     return db.Station.bulkCreate(all);
+  });
+  */
+}
+
+function updateStationInMainTable(stationObj){
+  return db.StationHistory.findOne(
+    {
+      where: {StationUuid: stationObj.StationUuid},
+      order: [['Creation','DESC']]
+    }
+  ).then((station)=>{
+    if (!station){
+      logger.error('Could not find history entry for: '+stationObj.StationUuid);
+      return;
+    }
+
+    // try to insert it, will fail if it is already there
+    return db.Station.create(stationObj).then(()=>{
+      //logger.info('CREATE OK: ' + stationObj.StationUuid);
+    }).catch((err)=>{
+      //logger.info('CREATE NOT OK: ' + stationObj.StationUuid);
+      return db.Station.update(stationObj, {
+        where: {StationUuid: stationObj.StationUuid}
+      }).catch((err)=>{
+        logger.error("could not update:"+stationObj.StationUuid);
+      });
+    });
   });
 }
 
@@ -88,11 +118,13 @@ function insertStationHistoryEntry(obj){
     Language: obj.language,
     Votes: obj.votes,
     NegativeVotes: obj.negativevotes,
-    Creation: obj.lastchangetime
+    Creation: obj.lastchangetime,
+    IP: obj.ip
   };
   let p = db.StationHistory.create(s)
   .then(()=>{
     s.insertOK = true;
+    return updateStationInMainTable(s);
   })
   .catch((err)=>{
     s.insertOK = false;
