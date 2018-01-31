@@ -12,6 +12,47 @@ const SYNC_INTERVAL_MSEC = SYNC_INTERVAL * 1000;
 
 const logger = createLogger.default('SYNC');
 
+const q = async.queue(insertWorker, 4);
+let LAST_DOWNLOAD = null;
+
+q.drain = ()=>{
+  logger.info('Insert queue drained');
+}
+
+let IMPORT_CHANGES_COUNTER = 0;
+
+setInterval(()=>{
+  let l = q.length();
+  if (l > 0){
+    logger.info('Station status update queue length:'+q.length());
+  }
+},10000);
+
+/*setInterval(()=>{
+  logger.info('Imported ' + IMPORT_CHANGES_COUNTER + ' changes');
+},10000);*/
+
+function insertWorker(task, cb){
+  updateStationInMainTable(task.stationuuid).then(()=>{
+    IMPORT_CHANGES_COUNTER++;
+    cb();
+  }).catch((err)=>{
+    cb(err);
+  });
+}
+
+function queuePushPromisified(stationuuid){
+  return new Promise((resolve,reject)=>{
+    q.push({stationuuid},function(err, result){
+      if (err){
+        return reject(err);
+      }else{
+        return resolve(result);
+      }
+    });
+  })
+}
+
 function retryPromise(times, interval, cb_p){
   return new Promise((resolve,reject)=>{
     async.retry({times,interval}, (cb)=>{
@@ -78,28 +119,49 @@ function initialSync(){
   */
 }
 
-function updateStationInMainTable(stationObj){
+function updateStationInMainTable(stationuuid){
   return db.StationHistory.findOne(
     {
-      where: {StationUuid: stationObj.StationUuid},
+      where: {StationUuid: stationuuid},
       order: [['Creation','DESC']]
     }
   ).then((station)=>{
     if (!station){
-      logger.error('Could not find history entry for: '+stationObj.StationUuid);
+      logger.error('Could not find history entry for: '+stationuuid);
       return;
     }
-
+    let stationCopy = {
+      StationUuid: station.StationUuid,
+      ChangeUuid: station.ChangeUuid,
+      Name: station.Name,
+      Url: station.Url,
+      Homepage: station.Homepage,
+      Favicon: station.Favicon,
+      Tags: station.Tags,
+      Country: station.Country,
+      Subcountry: station.Subcountry,
+      Language: station.Language,
+      Votes: station.Votes,
+      NegativeVotes: station.NegativeVotes,
+      Creation: station.Creation,
+      IP: station.IP
+    };
     // try to insert it, will fail if it is already there
-    return db.Station.create(stationObj).then(()=>{
-      //logger.info('CREATE OK: ' + stationObj.StationUuid);
+    return db.Station.create(stationCopy).then(()=>{
+      //logger.info('CREATE OK: ' + stationuuid);
+      stationCopy.action = 'created';
     }).catch((err)=>{
-      //logger.info('CREATE NOT OK: ' + stationObj.StationUuid);
-      return db.Station.update(stationObj, {
-        where: {StationUuid: stationObj.StationUuid}
+      //logger.info('CREATE NOT OK: ' + stationuuid);
+      return db.Station.update(stationCopy, {
+        where: {StationUuid: stationuuid}
+      }).then(()=>{
+        stationCopy.action = 'updated';
       }).catch((err)=>{
-        logger.error("could not update:"+stationObj.StationUuid);
+        stationCopy.action = 'failed';
+        logger.error("could not update:"+stationuuid);
       });
+    }).then(()=>{
+      return stationCopy;
     });
   });
 }
@@ -124,7 +186,6 @@ function insertStationHistoryEntry(obj){
   let p = db.StationHistory.create(s)
   .then(()=>{
     s.insertOK = true;
-    return updateStationInMainTable(s);
   })
   .catch((err)=>{
     s.insertOK = false;
@@ -136,8 +197,14 @@ function insertStationHistoryEntry(obj){
 }
 
 function incrementalSync(seconds){
+  if (LAST_DOWNLOAD){
+    let now = new Date();
+    let diff = (now.getTime() - LAST_DOWNLOAD.getTime()) / 1000;
+    logger.info('Seconds since last download: ' + diff);
+  }
+  LAST_DOWNLOAD=new Date();
   return Promise.resolve().then(() => {
-    logger.info('Get incremental changes from webservice..');
+    logger.debug('Get incremental changes from webservice..');
     let options = {
       uri: SYNC_BASE_URL + '/json/stations/changed?seconds=' + seconds,
       headers: {
@@ -150,17 +217,25 @@ function incrementalSync(seconds){
   .then((stations)=>{
     let all = [];
     // console.log(JSON.stringify(stations[0],null,' '));
-    logger.info('Importing ' + stations.length + ' changes..');
+    logger.debug('Importing ' + stations.length + ' changes..');
     for (let i=0;i<stations.length;i++){
       let obj = stations[i];
       all.push(insertStationHistoryEntry(obj));
     }
     return Promise.all(all);
   }).then((items)=>{
+    // filter out items we could not add to history table
     let inserted = items.filter((item)=>{
       return item.insertOK;
     });
-    return inserted.length;
+    logger.debug('Inserted ' + inserted.length + ' in history table');
+    // check all stations that we inserted new changes in history table
+    let list = inserted.map((item)=>{
+      return queuePushPromisified(item.StationUuid);
+    });
+    return Promise.all(list);
+  }).then((list)=>{
+    return list.length;
   });
 }
 
