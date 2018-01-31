@@ -201,6 +201,9 @@ function incrementalSync(seconds){
     let now = new Date();
     let diff = (now.getTime() - LAST_DOWNLOAD.getTime()) / 1000;
     logger.info('Seconds since last download: ' + diff);
+    seconds = Math.ceil(diff * 2);
+  }else{
+    seconds = 0;
   }
   LAST_DOWNLOAD=new Date();
   return Promise.resolve().then(() => {
