@@ -244,7 +244,11 @@ function incrementalSync(seconds){
 
 function doIncrementalSync(){
   incrementalSync(SYNC_INTERVAL * 2).then((items)=>{
-    logger.info('Incremental sync of '+items+' items done');
+    if (items > 0){
+      logger.info('Incremental sync of '+items+' items done');
+    }else{
+      logger.debug('Incremental sync of '+items+' items done');
+    }
   }).catch((err)=>{
     logger.error(err);
   }).then(()=>{
