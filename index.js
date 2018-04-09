@@ -5,12 +5,12 @@ const rp = require('request-promise');
 const async = require('async');
 const createLogger = require('logging');
 
+const logger = createLogger.default('SYNC');
+
 const SYNC_BASE_URL = process.env.SYNC_BASE_URL || exitWithError('SYNC_BASE_URL');
 const USER_AGENT = 'radiobrowsersync/0.0.1';
 const SYNC_INTERVAL = parseInt(process.env.SYNC_INTERVAL) || exitWithError('SYNC_INTERVAL');
 const SYNC_INTERVAL_MSEC = SYNC_INTERVAL * 1000;
-
-const logger = createLogger.default('SYNC');
 
 const q = async.queue(insertWorker, 4);
 let LAST_DOWNLOAD = null;
@@ -166,6 +166,17 @@ function updateStationInMainTable(stationuuid){
   });
 }
 
+function insertBulk(items, cb){
+  logger.info("" + items.length + " done");
+  let p = db.StationHistory.bulkCreate(items).then(()=>{
+    cb();
+  }).catch((err)=>{
+    cb(err);
+  });
+}
+
+let cargo = async.cargo(insertBulk,1000);
+
 function insertStationHistoryEntry(obj){
   let s = {
     StationUuid: obj.stationuuid,
@@ -183,7 +194,17 @@ function insertStationHistoryEntry(obj){
     Creation: obj.lastchangetime,
     IP: obj.ip
   };
-  let p = db.StationHistory.create(s)
+
+  let p = new Promise((resolve,reject)=>{
+    cargo.push(s,(err)=>{
+      if (err){
+        reject();
+      }else{
+        resolve();
+      }
+    });
+  })
+  //let p = db.StationHistory.create(s)
   .then(()=>{
     s.insertOK = true;
   })
